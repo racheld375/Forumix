@@ -1,6 +1,5 @@
 const Conversation = require("../models/Conversation");
 const Message = require("../models/Message");
-const { io } = require("../server");
 
 // יצירת שיחה או מציאת קיימת
 exports.getOrCreateConversation = async (req, res) => {
@@ -23,6 +22,7 @@ exports.getOrCreateConversation = async (req, res) => {
 // שליחת הודעה
 exports.sendMessage = async (req, res) => {
   const { conversationId, content } = req.body;
+  const io = req.app.get("socketio");
 
   const message = await Message.create({
     conversation: conversationId,

@@ -2,7 +2,6 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const http = require("http");
-const { default: mongoose } = require("mongoose");
 const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
 const corsoptions = require("./conpig/corsoptions");
@@ -11,8 +10,11 @@ const Message = require("./models/Message");
 
 const app = express();
 const PORT = 7500;
-
-connectDB();
+const LISTEN_RETRY_DELAY_MS = 1000;
+const MAX_LISTEN_RETRIES = 10;
+const FORCE_SHUTDOWN_TIMEOUT_MS = 1000;
+let isShuttingDown = false;
+let retryTimeout = null;
 
 app.use(express.json());
 app.use(cors(corsoptions));
@@ -33,6 +35,8 @@ const io = new Server(server, {
     credentials: true
   }
 });
+
+app.set("socketio", io);
 
 io.use((socket, next) => {
   const token = socket.handshake.auth?.token;
@@ -68,16 +72,127 @@ io.on("connection", (socket) => {
   });
 });
 
-mongoose.connection.once("open", () => {
-  console.log("connected to db");
-  server.listen(PORT, () => {
-    console.log(`server is runing on port ${PORT}`);
+async function shutdown(signal) {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
+  console.log(`Shutting down server (${signal})...`);
+
+  if (retryTimeout) {
+    clearTimeout(retryTimeout);
+    retryTimeout = null;
+  }
+
+  const forceExitTimer = setTimeout(() => {
+    console.warn("Forcing process exit to release port.");
+    process.exit(0);
+  }, FORCE_SHUTDOWN_TIMEOUT_MS);
+  forceExitTimer.unref();
+
+  io.close();
+
+  if (typeof server.closeIdleConnections === "function") {
+    server.closeIdleConnections();
+  }
+
+  if (typeof server.closeAllConnections === "function") {
+    server.closeAllConnections();
+  }
+
+  if (server.listening) {
+    await new Promise((resolve, reject) => {
+      server.close((err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+  }
+
+  try {
+    const mongoose = require("mongoose");
+    await mongoose.connection.close();
+  } catch (err) {
+    console.error("Error while closing database connection:", err);
+  }
+
+  clearTimeout(forceExitTimer);
+
+  if (signal === "SIGUSR2") {
+    process.kill(process.pid, "SIGUSR2");
+    return;
+  }
+
+  process.exit(0);
+}
+
+process.once("SIGINT", () => {
+  shutdown("SIGINT").catch((err) => {
+    console.error("Shutdown failed:", err);
+    process.exit(1);
   });
 });
 
-mongoose.connection.on("error", (err) => {
-  console.log(err);
+process.once("SIGTERM", () => {
+  shutdown("SIGTERM").catch((err) => {
+    console.error("Shutdown failed:", err);
+    process.exit(1);
+  });
 });
 
-module.exports = { io };
+process.once("SIGUSR2", () => {
+  shutdown("SIGUSR2").catch((err) => {
+    console.error("Shutdown failed:", err);
+    process.exit(1);
+  });
+});
 
+function listenWithRetry(attempt = 0) {
+  if (server.listening || isShuttingDown) return;
+
+  const handleListening = () => {
+    server.off("error", handleError);
+    console.log(`Server running on port ${PORT}`);
+  };
+
+  const handleError = (err) => {
+    server.off("listening", handleListening);
+
+    if (err.code === "EADDRINUSE" && attempt < MAX_LISTEN_RETRIES) {
+      const nextAttempt = attempt + 1;
+      console.warn(
+        `Port ${PORT} is still busy. Retrying in ${LISTEN_RETRY_DELAY_MS}ms (${nextAttempt}/${MAX_LISTEN_RETRIES})...`
+      );
+
+      retryTimeout = setTimeout(() => {
+        retryTimeout = null;
+        listenWithRetry(nextAttempt);
+      }, LISTEN_RETRY_DELAY_MS);
+      return;
+    }
+
+    if (err.code === "EADDRINUSE") {
+      console.error(`Port ${PORT} is busy after ${MAX_LISTEN_RETRIES} retries.`);
+      process.exit(1);
+    }
+
+    console.error(err);
+    process.exit(1);
+  };
+
+  server.once("listening", handleListening);
+  server.once("error", handleError);
+  server.listen(PORT);
+}
+
+async function startServer() {
+  await connectDB();
+
+  if (!server.listening) {
+    listenWithRetry();
+  }
+}
+
+startServer().catch((err) => {
+  console.error("Failed to start server:", err);
+  process.exit(1);
+});

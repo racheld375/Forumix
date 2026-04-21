@@ -1,0 +1,14 @@
+{
+  "signal": "SIGTERM",
+  "delay": "750",
+  "watch": [
+    "*.js",
+    "controllers/**/*.js",
+    "routes/**/*.js",
+    "models/**/*.js",
+    "conpig/**/*.js"
+  ],
+  "ignore": [
+    "node_modules/**"
+  ]
+}

@@ -13,61 +13,78 @@
 // const Category = require("../models/Categorys");
 // const User = require("../models/Users");
 
-
 const mongoose = require("mongoose");
 const Comment = require("../models/Comments");
 const Discussion = require("../models/Discussions");
 const User = require("../models/Users");
 
 exports.createComment = async (req, res) => {
+  
   try {
-    const { content, user, discussion } = req.body;
+    console.log("USER:", req.user);
+    console.log("BODY:", req.body);
+    const { content, discussion } = req.body;
+    const userId = req.user.id; // 👈 מגיע מה־token
 
     // בדיקה שכל השדות קיימים
-    if (!content || !user || !discussion) {
-      return res.status(400).json({ error: "חובה למלא: content, user, discussion" });
+    if (!content || !discussion) {
+      return res.status(400).json({ error: "חובה למלא: content, discussion" });
     }
 
     // בדיקה שהמזהים חוקיים
-    if (!mongoose.Types.ObjectId.isValid(user)) {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ error: "מזהה משתמש לא חוקי" });
     }
+
     if (!mongoose.Types.ObjectId.isValid(discussion)) {
       return res.status(400).json({ error: "מזהה דיון לא חוקי" });
     }
 
     // בדיקה שהמשתמש קיים
-    const userExists = await User.findById(user);
-    if (!userExists) return res.status(404).json({ error: "משתמש לא נמצא" });
+    const userExists = await User.findById(userId);
+    if (!userExists) {
+      return res.status(404).json({ error: "משתמש לא נמצא" });
+    }
 
     // בדיקה שהדיון קיים
     const discussionExists = await Discussion.findById(discussion);
-    if (!discussionExists) return res.status(404).json({ error: "דיון לא נמצא" });
+    if (!discussionExists) {
+      return res.status(404).json({ error: "דיון לא נמצא" });
+    }
 
     // יצירת תגובה חדשה
-    const newComment = new Comment({ content, user, discussion });
+    const newComment = new Comment({
+      content,
+      user: userId,
+      discussion
+    });
+
     await newComment.save();
 
-    // ודאי ששדות comments קיימים לפני push
+    // עדכון המשתמש
     if (!Array.isArray(userExists.comments)) userExists.comments = [];
     userExists.comments.push(newComment._id);
     await userExists.save();
 
-    if (!Array.isArray(discussionExists.comments)) discussionExists.comments = [];
-    // discussionExists.comments.push(newComment._id);
-    // await discussionExists.save();
+    // עדכון הדיון
     await Discussion.updateOne(
-  { _id: discussion },
-  { $push: { comments: newComment._id } }
-);
-    res.status(201).json(newComment);
+      { _id: discussion },
+      { $push: { comments: newComment._id } }
+    );
+
+    const populatedComment = await Comment.findById(newComment._id)
+  .populate("user", "username");
+
+res.status(201).json({ comment: populatedComment });
 
   } catch (err) {
     console.error("שגיאה ב-createComment:", err);
-    res.status(500).json({ error: "שגיאה ביצירת התגובה", details: err.message });
+    res.status(500).json({
+      error: "שגיאה ביצירת התגובה",
+      details: err.message
+    });
   }
 };
-
 // ========================
 // יצירת תגובה חדשה
 // ========================

@@ -4,20 +4,29 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 export const fetchDiscussionsByTopic = createAsyncThunk(
   "discussions/fetchByTopic",
   async (topicId, { rejectWithValue }) => {
-    const token = localStorage.getItem("token");
-
     try {
+      const token = localStorage.getItem("token"); // ✅ שליפת טוקן
+
       const res = await fetch(
         `http://localhost:7500/Forumix/discussions/by-category/${topicId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // ✅ שליחה לשרת
+          },
+        }
       );
 
-      if (res.status === 401) return rejectWithValue({ status: 401 });
-      if (res.status === 403) return rejectWithValue({ status: 403 });
+      // 🔥 טיפול נכון בשגיאות
+      if (!res.ok) {
+        return rejectWithValue({ status: res.status });
+      }
 
-      return await res.json();
+      const data = await res.json();
+      return data;
+
     } catch (err) {
-      return rejectWithValue(err.message);
+      return rejectWithValue({ status: 500, message: err.message });
     }
   }
 );
@@ -27,17 +36,19 @@ const discussionsSlice = createSlice({
   initialState: {
     items: [],
     loading: false,
-    error: null
+    error: null,
   },
   reducers: {
     clearDiscussions: (state) => {
       state.items = [];
-    }
+      state.error = null; // ✅ ניקוי שגיאה גם
+    },
   },
   extraReducers: (builder) => {
     builder
       .addCase(fetchDiscussionsByTopic.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(fetchDiscussionsByTopic.fulfilled, (state, action) => {
         state.loading = false;
@@ -47,7 +58,7 @@ const discussionsSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       });
-  }
+  },
 });
 
 export const { clearDiscussions } = discussionsSlice.actions;

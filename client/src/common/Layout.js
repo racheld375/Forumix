@@ -2,7 +2,7 @@
 //
 import socket from "../socket";
 
-//
+import { useNavigate } from 'react-router-dom';
 import { NavLink, Outlet } from "react-router-dom";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -23,7 +23,13 @@ export default function Layout() {
   }, [dispatch]);
   // ניסוי בשביל הצאט
         const token = useSelector(state => state.auth.token);
+const navigate = useNavigate(); // שורה זו חסרה לך כנראה
 
+  // שאר הלוגיקה של הקומפוננטה...
+  
+  const handleClick = () => {
+    navigate('/dashboard'); // כעת זה יעבוד
+  };
   useEffect(() => {
 
     if (token) {
@@ -36,6 +42,7 @@ export default function Layout() {
   }, [token]);
   //
   // const user = useSelector((state) => state.auth?.user);
+  
   return (
     <>
       <header>
@@ -60,6 +67,9 @@ export default function Layout() {
         {/* )} */}
 
       </nav>
+      <button onClick={() => navigate("/login")}>
+  התחברות
+</button>
       </header>
 
       <main>
