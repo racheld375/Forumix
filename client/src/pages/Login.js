@@ -8,46 +8,69 @@ export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-const dispatch = useDispatch();
+  const dispatch = useDispatch();
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  const res = await fetch("http://localhost:7500/Forumix/auth/login", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ username, password }),
-  });
+    const res = await fetch("http://localhost:7500/Forumix/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username, password }),
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (res.ok) {
-    const decoded = jwtDecode(data.token);
+    if (res.ok) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
 
-    dispatch(
-      loginSuccess({
-        token: data.token,
-        user: decoded,
-      })
-    );
+      console.log("Login raw token:", data.token);
+      const decoded = jwtDecode(data.token);
+      console.log("Login decoded token:", decoded);
 
-    navigate("/");
-  } else {
-    alert(data.message);
-  }
-};
+      const resolvedUser = {
+        ...decoded,
+        ...data.user,
+        username: data.user?.username || decoded.username || null
+      };
+
+      console.log("Login resolved user:", resolvedUser);
+
+      dispatch(
+        loginSuccess({
+          token: data.token,
+          user: resolvedUser,
+        })
+      );
+
+      navigate("/");
+    } else {
+      alert(data.message);
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit}>
-      <input value={username} onChange={e => setUsername(e.target.value)} placeholder="Username" />
-      <input value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="Password" />
+      <input
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        placeholder="Username"
+      />
+      <input
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        type="password"
+        placeholder="Password"
+      />
       <button type="submit">Login</button>
+
       <p>
-  אין לך חשבון? <span onClick={() => navigate("/register")}>הרשמה</span>
-</p>
+        אין לך חשבון?{" "}
+        <span onClick={() => navigate("/register")}>הרשמה</span>
+      </p>
     </form>
-    
   );
 }

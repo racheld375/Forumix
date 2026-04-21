@@ -50,11 +50,13 @@ function MyAccount() {
           name="username"
           value={formData.username}
           onChange={handleChange}
+          placeholder="Username"
         />
         <input
           name="profession"
           value={formData.profession}
           onChange={handleChange}
+          placeholder="profession"
         />
         <button onClick={handleUpdate}>
           עדכן פרטים

@@ -1,64 +1,97 @@
-
-import './App.css';
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
-import Layout from './common/Layout';
-import Login from './pages/Login';
-import TopicDiscussions from './pages/TopicDiscussions';
-import TopicComments from './pages/TopicComments';
-import UserProfile from './pages/UserProfile';
+import "./App.css";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Layout from "./common/Layout";
+import Login from "./pages/Login";
+import TopicDiscussions from "./pages/TopicDiscussions";
+import TopicComments from "./pages/TopicComments";
+import UserProfile from "./pages/UserProfile";
 import ProtectedRoute from "./common/ProtectedRoute";
-import { useEffect } from "react";
-// import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-// import { Provider } from "react-redux";
-// import store from "./store"; // ה-store שלך שמכיל chatSlice + discussionsSlice
-
-// import UserProfile from "./pages/UserProfile";
 import ChatWindow from "./pages/ChatWindow";
 import MyAccount from "./pages/MyAccount";
-import { useSelector } from "react-redux";
-import { jwtDecode } from "jwt-decode";
-import { useDispatch } from "react-redux";
-import { loginSuccess } from "./store/authSlice";
 import AdminPage from "./pages/AdminPage";
 import Register from "./pages/Register";
 
+import { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { jwtDecode } from "jwt-decode";
+import { loginSuccess } from "./store/authSlice";
+
 function App() {
   const dispatch = useDispatch();
-const currentUser = useSelector((state) => state.auth.user);
-console.log("currentUser:", currentUser);
+  const currentUser = useSelector((state) => state.auth.user);
 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const storedUser = JSON.parse(localStorage.getItem("user") || "null");
 
-useEffect(() => {
-  const token = localStorage.getItem("token");
+    if (token && !currentUser) {
+      try {
+        console.log("App init raw token:", token);
+        const decoded = jwtDecode(token);
+        console.log("App init decoded token:", decoded);
 
-  if (token) {
-    const decoded = jwtDecode(token);
-    dispatch(loginSuccess({ token, user: decoded }));
-  }
-}, [dispatch]);
+        const resolvedUser = {
+          ...decoded,
+          ...storedUser,
+          username: decoded.username || storedUser?.username || null
+        };
+
+        console.log("App init resolved user:", resolvedUser);
+
+        if (!resolvedUser.username) {
+          console.warn("Stored token is stale and missing username. Clearing localStorage token.");
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          return;
+        }
+
+        dispatch(
+          loginSuccess({
+            token,
+            user: resolvedUser,
+          })
+        );
+      } catch (err) {
+        console.error("Failed to decode stored token:", err);
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      }
+    }
+  }, [dispatch, currentUser]);
+
   return (
     <div className="App">
       <Router>
         <Routes>
-          <Route path='/' element={<Layout />}>
+          <Route path="/" element={<Layout />}>
             <Route index element={<h1>home page</h1>} />
             <Route path="login" element={<Login />} />
+            <Route path="register" element={<Register />} />
+
             <Route path="topic/:topicId" element={<TopicDiscussions />} />
             <Route path="discussion/:discussionId" element={<TopicComments />} />
             <Route path="user/:userId" element={<UserProfile />} />
 
-                      {/* אזור אישי */}
-          <Route path="my-account" element={<MyAccount />} />
+            <Route path="my-account" element={<MyAccount />} />
+            <Route path="chat/:chatId" element={<ChatWindow />} />
 
-          {/* צ'אט */}
-          <Route path="chat/:chatId" element={<ChatWindow />} />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute role="admin">
+                  <AdminPage />
+                </ProtectedRoute>
+              }
+            />
 
-<Route path="account" element={<MyAccount />} />
-<Route path="/register" element={<Register />} />
-<Route  path="/admin"  element={    <ProtectedRoute role="admin"> <AdminPage />  </ProtectedRoute>  }/>
-<Route  path="/profile"  element={    <ProtectedRoute> <UserProfile />  </ProtectedRoute>  }/>
-
-        
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <UserProfile />
+                </ProtectedRoute>
+              }
+            />
           </Route>
         </Routes>
       </Router>
