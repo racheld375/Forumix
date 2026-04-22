@@ -56,49 +56,48 @@ const handleAddComment = () => {
 });
 };
   return (
-    <div>
-
-{user ? (
-  <div>
-    <textarea
-      value={newComment}
-      onChange={(e) => setNewComment(e.target.value)}
-      placeholder="כתוב תגובה..."
-    />
-    <br />
-    <button onClick={handleAddComment}>הוסף תגובה</button>
-  </div>
-) : (
-  <p>
-    כדי להגיב יש <NavLink to="/login">להתחבר</NavLink>
-  </p>
-)}
-
-      <h2>תגובות</h2>
-
-      {loading && <p>טוען תגובות...</p>}
-      {error && <p>שגיאה: {error}</p>}
-
-{items?.length === 0 && !loading && <p>אין תגובות לדיון זה</p>}
-
-{items?.map((comment) => ( 
-
-        <div key={comment._id}>
-          <p>{comment.content}</p>
-          <span>
- 
-             הגיב/ה  בתאריך {" "}
-            {new Date(comment.createdAt).toLocaleDateString()}
-          </span>
-        
-          <NavLink key={comment._id} to={`/user/${comment.user._id}`}>
-              {comment.user.username}
-          </NavLink>
-
-
-
+    <section className="content-panel">
+      <div className="section-header">
+        <div>
+          <span className="eyebrow">Discussion Flow</span>
+          <h2>תגובות</h2>
         </div>
-      ))}
-    </div>
+      </div>
+
+      
+
+      {loading && <p className="status-text">טוען תגובות...</p>}
+      {error && <p className="status-text">שגיאה בטעינת תגובות.</p>}
+
+      {items?.length === 0 && !loading && <p className="status-text">אין תגובות לדיון זה</p>}
+
+      <div className="comment-stack">
+        {items?.map((comment) => ( 
+          <article key={comment._id} className="comment-card">
+            <p className="comment-body">{comment.content}</p>
+            <div className="comment-meta">
+              <NavLink className="inline-link" to={`/user/${comment.user._id}`}>
+                {comment.user.username}
+              </NavLink>
+              <span>{new Date(comment.createdAt).toLocaleDateString()}</span>
+            </div>
+          </article>
+        ))}
+      </div>
+      {user ? (
+        <div className="composer-card">
+          <textarea
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder="כתוב תגובה..."
+          />
+          <button className="primary-button" onClick={handleAddComment}>הוסף תגובה</button>
+        </div>
+      ) : (
+        <p className="status-text">
+          כדי להגיב יש <NavLink className="inline-link" to="/login">להתחבר</NavLink>
+        </p>
+      )}
+    </section>
   );
 }

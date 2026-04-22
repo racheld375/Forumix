@@ -29,23 +29,31 @@ export default function TopicDiscussions() {
   return () => dispatch(clearDiscussions());
 }, [dispatch, topicId, navigate]);
   return (
-    <div>
-      <h2>דיונים  </h2>
-
-      {loading && <p>טוען דיונים...</p>}
-      {/* {error && <p>שגיאה: {error}</p>} */}
-
-      {items.length === 0 && !loading && <p>אין דיונים בנושא זה</p>}
-
-      {items.map((discussion) => (
-        <div key={discussion._id} style={{ marginBottom: "20px" }}>
-          <h3>{discussion.title}</h3>
-          <NavLink key={discussion._id} to={`/discussion/${discussion._id}`}>
-              {discussion.topic}
-          </NavLink>
-          <p> תגובות {discussion.commentsCount}</p>
+    <section className="content-panel">
+      <div className="section-header">
+        <div>
+          <span className="eyebrow">Topic Discussions</span>
+          <h2>Follow the active threads</h2>
         </div>
-      ))}
-    </div>
+      </div>
+
+      {loading && <p className="status-text">טוען דיונים...</p>}
+      {error && <p className="status-text">אירעה שגיאה בטעינת הדיונים.</p>}
+
+      {items.length === 0 && !loading && <p className="status-text">אין דיונים בנושא זה</p>}
+
+      <div className="card-grid">
+        {items.map((discussion) => (
+          <article key={discussion._id} className="discussion-card">
+            <span className="mini-tag">{discussion.commentsCount || 0} comments</span>
+            <h3>{discussion.title}</h3>
+            <p>{discussion.topic}</p>
+            <NavLink className="inline-link" to={`/discussion/${discussion._id}`}>
+              Open discussion
+            </NavLink>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }

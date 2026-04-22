@@ -73,16 +73,7 @@ router.post("/register", async (req, res) => {
       { expiresIn: "1h" }
       );
 
-      res.json({
-        token,
-        user: {
-          id: user._id,
-          username: user.username,
-          role: user.role,
-          profession: user.advancedInfo?.profession || null,
-          advancedInfo: user.advancedInfo || null
-        }
-      });
+      res.json({ token });
     } catch (err) {
       res.status(500).json({ message: "שגיאת שרת" });
     }

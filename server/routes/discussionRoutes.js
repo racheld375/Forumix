@@ -30,6 +30,9 @@ router.delete(
 // שליפת כל הדיונים
 router.get("/", discussionController.getAllDiscussions);
 
+// חיפוש דיונים
+router.get("/search", discussionController.searchDiscussions);
+
 // שליפת דיונים לפי קטגוריה
 router.get("/by-category/:categoryId", discussionController.getDiscussionsByCategory);
 /*router.get(

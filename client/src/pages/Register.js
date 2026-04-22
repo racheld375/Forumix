@@ -69,70 +69,78 @@ export default function Register() {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h2>הרשמה</h2>
+    <section className="auth-page">
+      <form className="auth-card auth-card-wide" onSubmit={handleSubmit}>
+        <span className="eyebrow">Join Forumix</span>
+        <h2>Build your public presence</h2>
+        <p>Create an account, enter your basics, and optionally add professional context to your profile.</p>
 
-      <input
-        name="username"
-        placeholder="שם משתמש"
-        value={form.username}
-        onChange={handleChange}
-      />
-
-      <input
-        name="password"
-        type="password"
-        placeholder="סיסמה"
-        value={form.password}
-        onChange={handleChange}
-      />
-
-      <input
-        name="age"
-        type="number"
-        placeholder="גיל"
-        value={form.age}
-        onChange={handleChange}
-      />
-
-      <input
-        name="city"
-        placeholder="עיר"
-        value={form.city}
-        onChange={handleChange}
-      />
-
-      <h3>מידע מקצועי (לא חובה)</h3>
-
-      <select name="profession" onChange={handleChange}>
-        <option value="">בחר מקצוע</option>
-        {PROFESSIONS.map((p) => (
-          <option key={p} value={p}>
-            {p}
-          </option>
-        ))}
-      </select>
-
-      {form.profession && (
-        <>
+        <div className="form-grid">
           <input
-            name="educationPlace"
-            placeholder="מקום לימודים"
-            value={form.educationPlace}
+            name="username"
+            placeholder="שם משתמש"
+            value={form.username}
             onChange={handleChange}
           />
 
           <input
-            name="startYear"
+            name="password"
+            type="password"
+            placeholder="סיסמה"
+            value={form.password}
+            onChange={handleChange}
+          />
+
+          <input
+            name="age"
             type="number"
-            placeholder="שנת התחלה"
-            value={form.startYear}
+            placeholder="גיל"
+            value={form.age}
             onChange={handleChange}
           />
-        </>
-      )}
 
-      <button type="submit">הירשם</button>
-    </form>
+          <input
+            name="city"
+            placeholder="עיר"
+            value={form.city}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="section-card">
+          <h3>מידע מקצועי (לא חובה)</h3>
+
+          <select name="profession" value={form.profession} onChange={handleChange}>
+            <option value="">בחר מקצוע</option>
+            {PROFESSIONS.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+
+          {form.profession && (
+            <div className="form-grid">
+              <input
+                name="educationPlace"
+                placeholder="מקום לימודים"
+                value={form.educationPlace}
+                onChange={handleChange}
+              />
+
+              <input
+                name="startYear"
+                type="number"
+                placeholder="שנת התחלה"
+                value={form.startYear}
+                onChange={handleChange}
+              />
+            </div>
+          )}
+        </div>
+
+        <button type="submit" className="primary-button">הירשם</button>
+      </form>
+    </section>
   );
 }

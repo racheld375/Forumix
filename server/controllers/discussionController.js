@@ -19,6 +19,10 @@ const Category = require("../models/Categorys");
 const User = require("../models/Users");
 const Comment = require("../models/Comments");
 
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 // ========================
 // יצירת דיון חדש
 // ========================
@@ -239,5 +243,96 @@ exports.getDiscussionById = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "שגיאה בשליפת הדיון" });
+  }
+};
+
+// ========================
+// חיפוש בכל הקטגוריות, הדיונים והתגובות
+// ========================
+exports.searchDiscussions = async (req, res) => {
+  try {
+    const query = req.query.q?.trim();
+
+    if (!query) {
+      return res.json([]);
+    }
+
+    const regex = new RegExp(escapeRegex(query), "i");
+
+    const [matchingCategories, matchingDiscussions, matchingComments] = await Promise.all([
+      Category.find({ title: regex }).select("_id"),
+      Discussion.find({
+        $or: [
+          { title: regex },
+          { topic: regex }
+        ]
+      }).select("_id title topic"),
+      Comment.find({ content: regex }).select("discussion")
+    ]);
+
+    const categoryDiscussionIds = matchingCategories.length > 0
+      ? await Discussion.find({
+          category: { $in: matchingCategories.map((category) => category._id) }
+        }).select("_id")
+      : [];
+
+    const discussionIds = [
+      ...matchingDiscussions.map((discussion) => discussion._id.toString()),
+      ...matchingComments.map((comment) => comment.discussion.toString()),
+      ...categoryDiscussionIds.map((discussion) => discussion._id.toString())
+    ];
+
+    const uniqueDiscussionIds = [...new Set(discussionIds)];
+
+    if (uniqueDiscussionIds.length === 0) {
+      return res.json([]);
+    }
+
+    const discussions = await Discussion.find({ _id: { $in: uniqueDiscussionIds } })
+      .populate("creator", "username city")
+      .populate("category", "title");
+
+    const results = await Promise.all(
+      discussions.map(async (discussion) => {
+        const commentsCount = await Comment.countDocuments({ discussion: discussion._id });
+        const matchedIn = [];
+
+        if (regex.test(discussion.title) || regex.test(discussion.topic)) {
+          matchedIn.push("discussion");
+        }
+
+        if (discussion.category?.title && regex.test(discussion.category.title)) {
+          matchedIn.push("category");
+        }
+
+        const matchingComment = await Comment.findOne({
+          discussion: discussion._id,
+          content: regex
+        }).select("content");
+
+        if (matchingComment) {
+          matchedIn.push("comment");
+        }
+
+        return {
+          _id: discussion._id,
+          title: discussion.title,
+          topic: discussion.topic,
+          creator: discussion.creator,
+          category: discussion.category,
+          commentsCount,
+          createdAt: discussion.createdAt,
+          matchedIn,
+          commentPreview: matchingComment?.content || null
+        };
+      })
+    );
+
+    results.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    res.json(results);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "שגיאה בחיפוש דיונים" });
   }
 };

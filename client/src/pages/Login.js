@@ -12,7 +12,6 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const res = await fetch("http://localhost:7500/Forumix/auth/login", {
       method: "POST",
       headers: {
@@ -24,25 +23,15 @@ export default function Login() {
     const data = await res.json();
 
     if (res.ok) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-
-      console.log("Login raw token:", data.token);
       const decoded = jwtDecode(data.token);
-      console.log("Login decoded token:", decoded);
 
-      const resolvedUser = {
-        ...decoded,
-        ...data.user,
-        username: data.user?.username || decoded.username || null
-      };
-
-      console.log("Login resolved user:", resolvedUser);
+      // 🔥 שמירה ל-localStorage (חשוב מאוד)
+      localStorage.setItem("token", data.token);
 
       dispatch(
         loginSuccess({
           token: data.token,
-          user: resolvedUser,
+          user: decoded,
         })
       );
 
@@ -53,24 +42,32 @@ export default function Login() {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <input
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        placeholder="Username"
-      />
-      <input
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        type="password"
-        placeholder="Password"
-      />
-      <button type="submit">Login</button>
+    <section className="auth-page">
+      <form className="auth-card" onSubmit={handleSubmit}>
+        <span className="eyebrow">Welcome back</span>
+        <h2>Sign in to your space</h2>
+        <p>Pick up discussions, messages, and your professional profile right where you left them.</p>
 
-      <p>
-        אין לך חשבון?{" "}
-        <span onClick={() => navigate("/register")}>הרשמה</span>
-      </p>
-    </form>
+        <input
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="Username"
+        />
+        <input
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          type="password"
+          placeholder="Password"
+        />
+        <button type="submit" className="primary-button">Login</button>
+
+        <p className="auth-switch">
+          אין לך חשבון?{" "}
+          <button type="button" className="text-button" onClick={() => navigate("/register")}>
+            הרשמה
+          </button>
+        </p>
+      </form>
+    </section>
   );
 }

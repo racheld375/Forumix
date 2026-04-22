@@ -1,5 +1,3 @@
-
-//
 import socket from "../socket";
 
 import { useNavigate } from 'react-router-dom';
@@ -7,7 +5,6 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchTopics } from "../store/topicsSlice";
-
 import { logout } from "../store/authSlice";
 export default function Layout() {
   const dispatch = useDispatch();
@@ -15,19 +12,20 @@ export default function Layout() {
   const token = useSelector(state => state.auth.token);
   const user = useSelector((state) => state.auth.user);
   const navigate = useNavigate();
-  const displayName = user?.username || "Guest";
 
   useEffect(() => {
     dispatch(fetchTopics());
   }, [dispatch]);
 
   useEffect(() => {
+
     if (token) {
       socket.auth = { token };
       socket.connect();
     }
 
     return () => socket.disconnect();
+
   }, [token]);
 
   const handleLogout = () => {
@@ -35,57 +33,60 @@ export default function Layout() {
   };
   
   return (
-    <>
-      <header>
+    <div className="app-shell">
+      <header className="site-header">
+        <div className="site-header-top">
+          <div className="brand-block">
+            <NavLink to="/" className="brand-mark">
+              Forumix
+            </NavLink>
+            <p className="brand-subtitle">
+              Thoughtful discussion spaces for professionals, creators, and curious people.
+            </p>
+          </div>
 
-        <nav style={{ display: "flex", gap: "20px" }}>
-          {loading && <p>טוען...</p>}
-          {error && <p>שגיאה: {error}</p>}
+          <div className="header-actions">
+            <NavLink to="/" className="header-link">
+              Home
+            </NavLink>
+            <NavLink to="/account" className="header-link">
+              Personal Area
+            </NavLink>
 
-          {items.map(topic => (
-            <NavLink key={topic.id} to={`/topic/${topic._id}`}>
+            {user ? (
+              <div className="user-chip">
+                <span>{user.username ? `Hello ${user.username}` : "Logged in"}</span>
+                <button type="button" className="ghost-button" onClick={handleLogout}>
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <button type="button" className="primary-button" onClick={() => navigate("/login")}>
+                Login
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="topic-ribbon">
+          {loading && <p className="status-text">Loading topics...</p>}
+          {error && <p className="status-text">Error loading topics</p>}
+
+          {!loading && !error && items.map(topic => (
+            <NavLink
+              key={topic._id || topic.id}
+              to={`/topic/${topic._id}`}
+              className={({ isActive }) => `topic-pill${isActive ? " active" : ""}`}
+            >
               {topic.title}
             </NavLink>
           ))}
-        </nav>
-        <nav>
-
-        <NavLink to="/">בית</NavLink>
-
-        {/* {user && ( */}
-          <NavLink to="/my-account">
-            האזור האישי
-          </NavLink>
-        {/* )} */}
-
-      </nav>
-<h2>Forumix</h2>
-
-      <div>
-        {token ? (
-          <>
-            <span>Hello {displayName}</span>
-            <button onClick={handleLogout}>התנתקות</button>
-          </>
-        ) : (
-          <span>Hello {displayName}</span>
-        )}
-      </div>
-
-      {!token && (
-        <button onClick={() => navigate("/login")}>
-          התחברות
-        </button>
-      )}
+        </div>
       </header>
 
-      <main>
+      <main className="page-shell">
         <Outlet />
       </main>
-
-      
-
-      
-    </>
+    </div>
   );
 }

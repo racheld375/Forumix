@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const commentController = require("../controllers/commentController");
+console.log("Controller loaded:", commentController);
 const { authMiddleware, requireAdmin ,
     requireProfessionalCategory,
     requireVerifiedProfessional} = require("../conpig/authMiddleware");
@@ -8,7 +9,7 @@ const { authMiddleware, requireAdmin ,
 
 router.post(
     "/",
-    authMiddleware,              // בודק שהמשתמש מחובר
+    //authMiddleware,              // בודק שהמשתמש מחובר
     commentController.createComment
   );
 

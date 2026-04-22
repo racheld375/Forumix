@@ -1,5 +1,6 @@
 const Conversation = require("../models/Conversation");
 const Message = require("../models/Message");
+const { io } = require("../server");
 
 // יצירת שיחה או מציאת קיימת
 exports.getOrCreateConversation = async (req, res) => {
@@ -22,7 +23,6 @@ exports.getOrCreateConversation = async (req, res) => {
 // שליחת הודעה
 exports.sendMessage = async (req, res) => {
   const { conversationId, content } = req.body;
-  const io = req.app.get("socketio");
 
   const message = await Message.create({
     conversation: conversationId,
@@ -72,7 +72,22 @@ exports.getMyConversations = async (req, res) => {
     .populate("lastMessage")
     .sort({ updatedAt: -1 });
 
-  res.json(conversations);
+  const conversationsWithUnread = await Promise.all(
+    conversations.map(async (conversation) => {
+      const unreadCount = await Message.countDocuments({
+        conversation: conversation._id,
+        sender: { $ne: req.user.id },
+        readBy: { $ne: req.user.id }
+      });
+
+      return {
+        ...conversation.toObject(),
+        unreadCount
+      };
+    })
+  );
+
+  res.json(conversationsWithUnread);
 };
 
 
@@ -83,5 +98,39 @@ exports.getUnreadCount = async (req, res) => {
   });
 
   res.json({ count });
+};
+
+//
+const { io } = require("../server");
+
+// const Conversation = require("../models/Conversation");
+
+exports.sendMessage = async (req, res) => {
+
+  const { conversationId, content } = req.body;
+
+  const createdMessage = await Message.create({
+    conversation: conversationId,
+    sender: req.user.id,
+    content,
+    readBy: [req.user.id]
+  });
+
+  await Conversation.findByIdAndUpdate(conversationId, {
+    lastMessage: createdMessage._id
+  });
+
+  const conversation = await Conversation.findById(conversationId);
+  const message = await Message.findById(createdMessage._id)
+    .populate("sender", "username");
+
+  const receiverId = conversation.participants.find(
+    p => p.toString() !== req.user.id
+  );
+
+  io.to(receiverId.toString()).emit("receiveMessage", message);
+
+  res.status(201).json(message);
+
 };
 
