@@ -6,7 +6,7 @@ const Comment = require("../models/Comments");
 // ------------------------
 exports.createUser = async (req, res) => {
   try {
-    const { username, passwordHash, age, city, advancedInfo } = req.body;
+    const { username, passwordHash, age, city, advancedInfo, role } = req.body;
 
     // בדיקות בסיסיות
     if (!username || !passwordHash || age == null || !city) {
@@ -23,7 +23,14 @@ exports.createUser = async (req, res) => {
       }
     }
 
-    const newUser = new User({ username, passwordHash, age, city, advancedInfo });
+    const newUser = new User({
+      username,
+      passwordHash: String(passwordHash),
+      age,
+      city,
+      advancedInfo,
+      role
+    });
     await newUser.save();
     res.status(201).json(newUser);
 
@@ -38,10 +45,10 @@ exports.createUser = async (req, res) => {
 // ------------------------
 exports.updateUser = async (req, res) => {
   try {
-    const { username, age, city, advancedInfo } = req.body;
+    const { username, age, city, advancedInfo, role } = req.body;
 
     // בדיקה שיש שדות לעדכון
-    if (!username && !age && !city && !advancedInfo) {
+    if (!username && !age && !city && !advancedInfo && !role) {
       return res.status(400).json({ error: "אין שדות לעדכון" });
     }
 
@@ -57,7 +64,7 @@ exports.updateUser = async (req, res) => {
 
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
-      { username, age, city, advancedInfo },
+      { username, age, city, advancedInfo, role },
       { new: true, runValidators: true }
     );
 

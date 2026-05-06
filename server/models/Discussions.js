@@ -14,7 +14,7 @@ const discussionSchema = new mongoose.Schema({
 
 // וירטואלי לחישוב כמות התגובות
 discussionSchema.virtual("commentsCount").get(function () {
-  return this.comments.length;
+  return this.comments?.length || 0;
 });
 
 const Discussion = mongoose.model("Discussion", discussionSchema);

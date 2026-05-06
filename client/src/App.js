@@ -9,6 +9,7 @@ import TopicComments from "./pages/TopicComments";
 import UserProfile from "./pages/UserProfile";
 import ChatWindow from "./pages/ChatWindow";
 import MyAccount from "./pages/MyAccount";
+import AdminPage from "./pages/AdminPage";
 import { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 
@@ -296,6 +297,7 @@ function App() {
             <Route path="account" element={<MyAccount />} />
             <Route path="chat/:chatId" element={<ChatWindow />} />
             <Route path="user/:userId" element={<UserProfile />} />
+            <Route path="admin" element={<AdminPage />} />
           </Route>
         </Routes>
       </Router>

@@ -7,8 +7,8 @@ const { authMiddleware, requireAdmin ,
 // יצירת קטגוריה – רק מנהל
 router.post(
     "/",
-    // authMiddleware,
-    // requireAdmin,
+    authMiddleware,
+    requireAdmin,
     categoryController.createCategory
   );
   

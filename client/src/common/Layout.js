@@ -52,6 +52,11 @@ export default function Layout() {
             <NavLink to="/account" className="header-link">
               Personal Area
             </NavLink>
+            {user?.role === "admin" && (
+              <NavLink to="/admin" className="header-link">
+                Admin
+              </NavLink>
+            )}
 
             {user ? (
               <div className="user-chip">

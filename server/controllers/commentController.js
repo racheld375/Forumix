@@ -17,6 +17,7 @@ const mongoose = require("mongoose");
 const Comment = require("../models/Comments");
 const Discussion = require("../models/Discussions");
 const User = require("../models/Users");
+const Category = require("../models/Categorys");
 
 exports.createComment = async (req, res) => {
   

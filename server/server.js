@@ -31,6 +31,7 @@ app.set("socketio", io);
 app.use("/Forumix/chat", require("./routes/chatRoutes"));
 app.use("/Forumix/users",require("./routes/userRoute"))
 app.use("/Forumix/discussions",require("./routes/discussionRoutes"))
+app.use("/Forumix/discussion-proposals", require("./routes/discussionProposalRoutes"))
 app.use("/Forumix/comment",require("./routes/commentRoutes"))
 app.use("/Forumix/category",require("./routes/categoryRoutes"))
 app.use("/Forumix/auth",require("./routes/auth"))

@@ -8,14 +8,20 @@ import {
 } from "../store/discussionsSlice";
 import { useNavigate } from "react-router-dom";
 import { NavLink } from "react-router-dom";
+import { useState } from "react";
+import socket from "../socket";
 
 export default function TopicDiscussions() {
   const navigate = useNavigate();
   const { topicId } = useParams();
   const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
   const { items, loading, error } = useSelector(
     (state) => state.discussions
   );
+  const [showProposalForm, setShowProposalForm] = useState(false);
+  const [proposalForm, setProposalForm] = useState({ title: "", note: "" });
+  const [proposalStatus, setProposalStatus] = useState("");
 
   useEffect(() => {
   dispatch(fetchDiscussionsByTopic(topicId))
@@ -28,6 +34,58 @@ export default function TopicDiscussions() {
 
   return () => dispatch(clearDiscussions());
 }, [dispatch, topicId, navigate]);
+
+  useEffect(() => {
+    const handleDiscussionApproved = (payload) => {
+      if (payload?.categoryId === topicId) {
+        dispatch(fetchDiscussionsByTopic(topicId));
+      }
+    };
+
+    socket.on("discussionApproved", handleDiscussionApproved);
+
+    return () => {
+      socket.off("discussionApproved", handleDiscussionApproved);
+    };
+  }, [dispatch, topicId]);
+
+  const handleSubmitProposal = async (event) => {
+    event.preventDefault();
+
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("http://localhost:7500/Forumix/discussion-proposals", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: proposalForm.title,
+          note: proposalForm.note,
+          category: topicId
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || "שגיאה בשליחת הצעת דיון");
+      }
+
+      setProposalForm({ title: "", note: "" });
+      setShowProposalForm(false);
+      setProposalStatus("הצעת הדיון נשלחה למנהל לאישור");
+    } catch (err) {
+      setProposalStatus(err.message || "שגיאה בשליחת הצעת דיון");
+    }
+  };
+
   return (
     <section className="content-panel">
       <div className="section-header">
@@ -35,7 +93,43 @@ export default function TopicDiscussions() {
           <span className="eyebrow">Topic Discussions</span>
           <h2>Follow the active threads</h2>
         </div>
+        <button
+          type="button"
+          className="primary-button"
+          onClick={() => {
+            if (!user) {
+              navigate("/login");
+              return;
+            }
+
+            setShowProposalForm((current) => !current);
+          }}
+        >
+          דיון חדש
+        </button>
       </div>
+
+      {showProposalForm && (
+        <form className="composer-card discussion-proposal-form" onSubmit={handleSubmitProposal}>
+          <input
+            value={proposalForm.title}
+            onChange={(event) => setProposalForm({ ...proposalForm, title: event.target.value })}
+            placeholder="שם הדיון"
+            required
+          />
+          <textarea
+            value={proposalForm.note}
+            onChange={(event) => setProposalForm({ ...proposalForm, note: event.target.value })}
+            placeholder="הערה למנהל"
+            required
+          />
+          <button type="submit" className="primary-button">
+            שליחת הצעה לאישור
+          </button>
+        </form>
+      )}
+
+      {proposalStatus && <p className="status-text">{proposalStatus}</p>}
 
       {loading && <p className="status-text">טוען דיונים...</p>}
       {error && <p className="status-text">אירעה שגיאה בטעינת הדיונים.</p>}

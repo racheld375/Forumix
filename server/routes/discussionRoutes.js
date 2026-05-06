@@ -10,8 +10,8 @@ const { authMiddleware, requireAdmin ,
 // יצירת דיון – רק מנהל
 router.post(
     "/",
-    // authMiddleware,          // 1️⃣ בודק טוקן ותוקף המשתמש
-    // requireAdmin,    // 2️⃣ בודק שהמשתמש מנהל
+    authMiddleware,
+    requireAdmin,
     discussionController.createDiscussion  // 3️⃣ הפונקציה שמבצעת את יצירת הדיון
   );
 

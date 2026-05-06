@@ -1,8 +1,22 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { jwtDecode } from "jwt-decode";
+
+const savedToken = localStorage.getItem("token") || null;
+
+function getUserFromToken(token) {
+  if (!token) return null;
+
+  try {
+    return jwtDecode(token);
+  } catch {
+    localStorage.removeItem("token");
+    return null;
+  }
+}
 
 const initialState = {
-  user: null,
-  token: localStorage.getItem("token") || null,
+  user: getUserFromToken(savedToken),
+  token: savedToken,
 };
 
 const authSlice = createSlice({

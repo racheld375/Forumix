@@ -9,15 +9,15 @@ const { authMiddleware, requireAdmin ,
 
 router.post(
     "/",
-    //authMiddleware,              // בודק שהמשתמש מחובר
+    authMiddleware,
     commentController.createComment
   );
 
 // עדכון תגובה לפי ID
-router.put("/:id", commentController.updateComment);
+router.put("/:id", authMiddleware, requireAdmin, commentController.updateComment);
 
 // מחיקת תגובה לפי ID
-router.delete("/:id", commentController.deleteComment);
+router.delete("/:id", authMiddleware, requireAdmin, commentController.deleteComment);
 
 // שליפת כל התגובות
 router.get("/", commentController.getAllComments);
