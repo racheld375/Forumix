@@ -5,8 +5,14 @@ const corsoptions=require("./conpig/corsoptions")
 const app=express()
 const connectDB=require("./conpig/dbconn")
 const { default: mongoose } = require("mongoose")
+const http = require("http");
+const { Server } = require("socket.io");
+const jwt = require("jsonwebtoken");
+const Message = require("./models/Message");
+
 connectDB()
 const PORT =process.env.PORT|| 7000
+const server = http.createServer(app);
 
 app.use(express.json())
 
@@ -16,16 +22,22 @@ app.use(express.json())
 app.use(cors(corsoptions))
 app.use(express.static("public"))
 
+const io = new Server(server, {
+  cors: { origin: "*" }
+});
+
+app.set("socketio", io);
+
 app.use("/Forumix/chat", require("./routes/chatRoutes"));
 app.use("/Forumix/users",require("./routes/userRoute"))
 app.use("/Forumix/discussions",require("./routes/discussionRoutes"))
 app.use("/Forumix/comment",require("./routes/commentRoutes"))
 app.use("/Forumix/category",require("./routes/categoryRoutes"))
-// app.use("/Forumix/auth",require("./routes/auth"))
+app.use("/Forumix/auth",require("./routes/auth"))
 
-mongoose.connection.once('open',err=>{
+mongoose.connection.once('open', () => {
     console.log("connected to db")
-    app.listen(PORT,()=>{
+    server.listen(PORT,()=>{
     console.log(`server is runing on port ${PORT}`)
     })
 })
@@ -33,20 +45,6 @@ mongoose.connection.once('open',err=>{
 mongoose.connection.on('error',err=>{
     console.log(err)
 })
-
-//ניסוי בשביל הצאט מכאן
-
-const http = require("http");
-const { Server } = require("socket.io");
-const jwt = require("jsonwebtoken");
-
-
-
-const server = http.createServer(app);
-
-const io = new Server(server, {
-  cors: { origin: "*" }
-});
 
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
@@ -84,7 +82,3 @@ io.on("connection", (socket) => {
 });
 
 });
-
-server.listen(5000, () => console.log("Server running"));
-
-module.exports = { io };

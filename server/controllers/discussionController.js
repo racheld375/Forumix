@@ -23,6 +23,75 @@ function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function clampSummaryLines(value) {
+  const parsed = Number.parseInt(value, 10);
+
+  if (Number.isNaN(parsed)) return 8;
+  return Math.min(20, Math.max(5, parsed));
+}
+
+async function requestOpenAiSummary({ discussion, comments, lines }) {
+  if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === "your_openai_api_key") {
+    throw new Error("OPENAI_API_KEY_MISSING");
+  }
+
+  if (typeof fetch !== "function") {
+    throw new Error("FETCH_UNAVAILABLE");
+  }
+
+  const transcript = comments.length > 0
+    ? comments.map((comment, index) => {
+        const author = comment.user?.username || "משתמש";
+        return `${index + 1}. ${author}: ${comment.content}`;
+      }).join("\n")
+    : "אין תגובות עדיין לדיון הזה.";
+
+  const prompt = [
+    "הכן תקציר בעברית לדיון בפורום.",
+    `התקציר חייב להיות בין ${lines} ל-${lines + 1} שורות קצרות לכל היותר.`,
+    "החזר טקסט נקי בלבד, בלי כותרות markdown, בלי פתיחים כמו 'הנה התקציר', ובלי רשימות ממוספרות.",
+    "התקציר צריך לתאר את מוקד הדיון, עמדות בולטות, ומה עלה מהתגובות.",
+    "",
+    `כותרת הדיון: ${discussion.title}`,
+    `נושא הדיון: ${discussion.topic}`,
+    `קטגוריה: ${discussion.category?.title || "כללי"}`,
+    "",
+    "תגובות:",
+    transcript
+  ].join("\n");
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: "אתה מסכם דיונים בפורום בצורה מדויקת, בהירה וקצרה בעברית."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      temperature: 0.4
+    })
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    const apiMessage = data?.error?.message || "OpenAI request failed";
+    throw new Error(apiMessage);
+  }
+
+  return data?.choices?.[0]?.message?.content?.trim() || "";
+}
+
 // ========================
 // יצירת דיון חדש
 // ========================
@@ -243,6 +312,56 @@ exports.getDiscussionById = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "שגיאה בשליפת הדיון" });
+  }
+};
+
+// ========================
+// יצירת תקציר AI לדיון
+// ========================
+exports.generateAiSummary = async (req, res) => {
+  try {
+    const lines = clampSummaryLines(req.body?.lines);
+
+    const discussion = await Discussion.findById(req.params.discussionId)
+      .populate("creator", "username city")
+      .populate("category", "title");
+
+    if (!discussion) {
+      return res.status(404).json({ error: "דיון לא נמצא" });
+    }
+
+    const comments = await Comment.find({ discussion: discussion._id })
+      .populate("user", "username")
+      .sort({ createdAt: 1 });
+
+    const summaryText = await requestOpenAiSummary({ discussion, comments, lines });
+
+    if (!summaryText) {
+      return res.status(502).json({ error: "לא התקבל תקציר משירות ה-AI" });
+    }
+
+    res.json({
+      title: discussion.title,
+      topic: discussion.topic,
+      category: discussion.category?.title || "כללי",
+      commentsCount: comments.length,
+      participantsCount: [...new Set(comments.map((comment) => comment.user?._id?.toString()).filter(Boolean))].length,
+      lines,
+      summary: summaryText,
+      generatedAt: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error(err);
+
+    if (err.message === "OPENAI_API_KEY_MISSING") {
+      return res.status(500).json({ error: "OPENAI_API_KEY לא מוגדר בשרת או עדיין מוגדר כערך דמה" });
+    }
+
+    if (err.message === "FETCH_UNAVAILABLE") {
+      return res.status(500).json({ error: "השרת לא תומך בבקשות fetch עבור שירות ה-AI" });
+    }
+
+    res.status(500).json({ error: err.message || "שגיאה ביצירת תקציר AI" });
   }
 };
 

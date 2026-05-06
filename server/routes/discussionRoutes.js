@@ -51,5 +51,6 @@ router.get("/last10", discussionController.getLast10Discussions);
 router.get("/by-user-comments/:userId", discussionController.getDiscussionsByUserComments);
 // שליפת דיון לפי מזהה
 router.get("/:discussionId", discussionController.getDiscussionById);
+router.post("/:discussionId/ai-summary", discussionController.generateAiSummary);
 
 module.exports = router;
