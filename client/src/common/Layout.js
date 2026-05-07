@@ -47,20 +47,20 @@ export default function Layout() {
 
           <div className="header-actions">
             <NavLink to="/" className="header-link">
-              Home
+              בית
             </NavLink>
             <NavLink to="/account" className="header-link">
-              Personal Area
+              אזור אישי
             </NavLink>
             {user?.role === "admin" && (
               <NavLink to="/admin" className="header-link">
-                Admin
+                מנהל
               </NavLink>
             )}
 
             {user ? (
               <div className="user-chip">
-                <span>{user.username ? `Hello ${user.username}` : "Logged in"}</span>
+                <span>{user.username ? `שלום ${user.username}` : "Logged in"}</span>
                 <button type="button" className="ghost-button" onClick={handleLogout}>
                   Logout
                 </button>

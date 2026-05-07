@@ -30,9 +30,9 @@ function clampSummaryLines(value) {
   return Math.min(20, Math.max(5, parsed));
 }
 
-async function requestOpenAiSummary({ discussion, comments, lines }) {
-  if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === "your_openai_api_key") {
-    throw new Error("OPENAI_API_KEY_MISSING");
+async function requestGeminiSummary({ discussion, comments, lines }) {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY_MISSING");
   }
 
   if (typeof fetch !== "function") {
@@ -46,50 +46,48 @@ async function requestOpenAiSummary({ discussion, comments, lines }) {
       }).join("\n")
     : "אין תגובות עדיין לדיון הזה.";
 
-  const prompt = [
-    "הכן תקציר בעברית לדיון בפורום.",
-    `התקציר חייב להיות בין ${lines} ל-${lines + 1} שורות קצרות לכל היותר.`,
-    "החזר טקסט נקי בלבד, בלי כותרות markdown, בלי פתיחים כמו 'הנה התקציר', ובלי רשימות ממוספרות.",
-    "התקציר צריך לתאר את מוקד הדיון, עמדות בולטות, ומה עלה מהתגובות.",
-    "",
-    `כותרת הדיון: ${discussion.title}`,
-    `נושא הדיון: ${discussion.topic}`,
-    `קטגוריה: ${discussion.category?.title || "כללי"}`,
-    "",
-    "תגובות:",
-    transcript
-  ].join("\n");
+  const prompt = `
+אתה מערכת שמסכמת דיונים בפורום.
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: "אתה מסכם דיונים בפורום בצורה מדויקת, בהירה וקצרה בעברית."
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      temperature: 0.4
-    })
-  });
+הוראות:
+- כתוב בעברית
+- סכם בצורה תמציתית וברורה
+- מקסימום ${lines} שורות
+- ללא פתיחים מיותרים
+
+כותרת: ${discussion.title}
+נושא: ${discussion.topic}
+קטגוריה: ${discussion.category?.title || "כללי"}
+
+תגובות:
+${transcript}
+`;
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [{ text: prompt }]
+          }
+        ]
+      })
+    }
+  );
 
   const data = await response.json();
 
   if (!response.ok) {
-    const apiMessage = data?.error?.message || "OpenAI request failed";
+    const apiMessage = data?.error?.message || "Gemini request failed";
     throw new Error(apiMessage);
   }
 
-  return data?.choices?.[0]?.message?.content?.trim() || "";
+  return data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
 }
 
 // ========================
@@ -334,8 +332,22 @@ exports.generateAiSummary = async (req, res) => {
       .populate("user", "username")
       .sort({ createdAt: 1 });
 
-    const summaryText = await requestOpenAiSummary({ discussion, comments, lines });
+    // const summaryText = await requestGeminiSummary({ discussion, comments, lines });
+    let summaryText = "";
+let usedFallback = false;
 
+try {
+  summaryText = await requestGeminiSummary({
+    discussion,
+    comments,
+    lines
+  });
+} catch (err) {
+  console.error("AI failed, using fallback:", err.message);
+
+  usedFallback = true;
+  summaryText = buildFallbackSummary(discussion, comments, lines);
+}
     if (!summaryText) {
       return res.status(502).json({ error: "לא התקבל תקציר משירות ה-AI" });
     }
@@ -348,12 +360,12 @@ exports.generateAiSummary = async (req, res) => {
       participantsCount: [...new Set(comments.map((comment) => comment.user?._id?.toString()).filter(Boolean))].length,
       lines,
       summary: summaryText,
-      generatedAt: new Date().toISOString()
+      generatedAt: new Date().toISOString(),
+      usedFallback
     });
   } catch (err) {
     console.error(err);
-
-    if (err.message === "OPENAI_API_KEY_MISSING") {
+if (err.message === "GEMINI_API_KEY_MISSING") {
       return res.status(500).json({ error: "OPENAI_API_KEY לא מוגדר בשרת או עדיין מוגדר כערך דמה" });
     }
 
@@ -455,3 +467,20 @@ exports.searchDiscussions = async (req, res) => {
     res.status(500).json({ error: "שגיאה בחיפוש דיונים" });
   }
 };
+function buildFallbackSummary(discussion, comments, lines) {
+  const text = comments
+    .slice(0, lines)
+    .map(c => `• ${c.user?.username || "משתמש"}: ${c.content}`)
+    .join("\n");
+
+  return `
+תקציר דיון (ללא AI):
+
+נושא: ${discussion.title}
+
+עיקרי התגובות:
+${text}
+
+סה"כ תגובות: ${comments.length}
+  `.trim();
+}

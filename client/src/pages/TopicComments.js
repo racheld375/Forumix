@@ -294,7 +294,7 @@ export default function TopicComments() {
   const [discussion, setDiscussion] = useState(null);
   const [showSummary, setShowSummary] = useState(false);
   const [showAiSummary, setShowAiSummary] = useState(false);
-  const [summaryLines, setSummaryLines] = useState(8);
+  const [summaryLines] = useState(8);
   const [aiSummary, setAiSummary] = useState(null);
   const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
   const [aiSummaryError, setAiSummaryError] = useState("");
@@ -435,50 +435,26 @@ const handleAddComment = () => {
           <h2>{discussion?.title || "תגובות"}</h2>
           {discussion?.topic && <p className="section-intro">{discussion.topic}</p>}
         </div>
-        <button
-          type="button"
-          className="primary-button"
-          onClick={() => setShowSummary((current) => !current)}
-        >
-          סיכום דיון
-        </button>
+        <div className="discussion-header-actions">
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() => setShowSummary((current) => !current)}
+          >
+            סיכום דיון
+          </button>
+          <button
+            type="button"
+            className="primary-button"
+            onClick={handleGenerateAiSummary}
+            disabled={aiSummaryLoading}
+          >
+            {aiSummaryLoading ? "יוצר תקציר..." : "תקציר AI"}
+          </button>
+        </div>
       </div>
 
-      <section className="summary-panel ai-summary-config-panel">
-        <div className="summary-toolbar">
-          <div>
-            <span className="eyebrow">AI Summary</span>
-            <h3>תקציר AI</h3>
-            <p className="section-intro">בחר כמה שורות תרצה בתקציר, בין 5 ל־20, וניצור עבורך מסמך תקציר מבוסס AI.</p>
-          </div>
-
-          <div className="summary-actions summary-actions-wide">
-            <label className="summary-lines-field">
-              <span>מספר שורות</span>
-              <input
-                type="number"
-                min="5"
-                max="20"
-                value={summaryLines}
-                onChange={(event) => {
-                  const nextValue = Number(event.target.value);
-                  setSummaryLines(Number.isNaN(nextValue) ? 5 : Math.min(20, Math.max(5, nextValue)));
-                }}
-              />
-            </label>
-            <button
-              type="button"
-              className="primary-button"
-              onClick={handleGenerateAiSummary}
-              disabled={aiSummaryLoading}
-            >
-              {aiSummaryLoading ? "יוצר תקציר..." : "תקציר AI"}
-            </button>
-          </div>
-        </div>
-
-        {aiSummaryError && <p className="status-text">{aiSummaryError}</p>}
-      </section>
+      {aiSummaryError && <p className="status-text">{aiSummaryError}</p>}
 
       {showSummary && (
         <section className="summary-panel">
@@ -551,6 +527,11 @@ const handleAddComment = () => {
             <div>
               <span className="eyebrow">AI Summary</span>
               <h3>{aiSummary.title}</h3>
+              {aiSummary.usedFallback && (
+  <p className="status-text">
+    ⚠️ תקציר AI לא זמין כרגע
+  </p>
+)}
             </div>
 
             <div className="summary-actions">
