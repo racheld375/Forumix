@@ -38,10 +38,11 @@ async function sendAdminDecisionMessage(req, userId, content) {
 
 exports.createProposal = async (req, res) => {
   try {
-    const { title, note, category } = req.body;
+    const { title, topic, note, category } = req.body;
+    const proposalTopic = topic || note;
 
-    if (!title || !note || !category) {
-      return res.status(400).json({ error: "חובה למלא שם דיון, הערה וקטגוריה" });
+    if (!title || !proposalTopic || !category) {
+      return res.status(400).json({ error: "חובה למלא כותרת דיון, תוכן וקטגוריה" });
     }
 
     const categoryExists = await Category.findById(category);
@@ -51,7 +52,7 @@ exports.createProposal = async (req, res) => {
 
     const proposal = await DiscussionProposal.create({
       title,
-      note,
+      topic: proposalTopic,
       category,
       requester: req.user.id
     });
@@ -103,9 +104,11 @@ exports.approveProposal = async (req, res) => {
       return res.status(400).json({ error: "ההצעה כבר טופלה" });
     }
 
+    const discussionTopic = proposal.topic || proposal.note;
+
     const discussion = await Discussion.create({
       title: proposal.title,
-      topic: proposal.title,
+      topic: discussionTopic,
       creator: proposal.requester._id,
       category: proposal.category._id
     });
@@ -115,6 +118,7 @@ exports.approveProposal = async (req, res) => {
     });
 
     proposal.status = "approved";
+    if (!proposal.topic) proposal.topic = discussionTopic;
     await proposal.save();
 
     await sendAdminDecisionMessage(

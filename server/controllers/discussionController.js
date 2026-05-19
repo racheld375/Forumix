@@ -142,13 +142,23 @@ exports.updateDiscussion = async (req, res) => {
       if (!categoryExists) return res.status(404).json({ error: "קטגוריה לא נמצאה" });
     }
 
-    const updatedDiscussion = await Discussion.findByIdAndUpdate(
-      req.params.id,
-      {title, topic, category },
-      { new: true, runValidators: true }
-    );
+    const existingDiscussion = await Discussion.findById(req.params.id);
+    if (!existingDiscussion) return res.status(404).json({ error: "דיון לא נמצא" });
 
-    if (!updatedDiscussion) return res.status(404).json({ error: "דיון לא נמצא" });
+    const previousCategory = existingDiscussion.category?.toString();
+
+    if (title !== undefined) existingDiscussion.title = title;
+    if (topic !== undefined) existingDiscussion.topic = topic;
+    if (category !== undefined) existingDiscussion.category = category;
+
+    const updatedDiscussion = await existingDiscussion.save();
+
+    if (category && previousCategory !== category) {
+      await Promise.all([
+        Category.findByIdAndUpdate(previousCategory, { $pull: { discussions: updatedDiscussion._id } }),
+        Category.findByIdAndUpdate(category, { $addToSet: { discussions: updatedDiscussion._id } })
+      ]);
+    }
 
     res.json(updatedDiscussion);
 

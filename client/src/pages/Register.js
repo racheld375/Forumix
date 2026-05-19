@@ -72,10 +72,11 @@ export default function Register() {
     <section className="auth-page">
       <form className="auth-card auth-card-wide" onSubmit={handleSubmit}>
         <span className="eyebrow">Join Forumix</span>
-        <h2>Build your public presence</h2>
-        <p>Create an account, enter your basics, and optionally add professional context to your profile.</p>
+        {/* <h2>Build your public presence</h2>
+        <p>Create an account, enter your basics, and optionally add professional context to your profile.</p> */}
 
         <div className="form-grid">
+          
           <input
             name="username"
             placeholder="שם משתמש"
@@ -107,7 +108,7 @@ export default function Register() {
           />
         </div>
 
-        <div className="section-card">
+        {/* <div className="section-card">
           <h3>מידע מקצועי (לא חובה)</h3>
 
           <select name="profession" value={form.profession} onChange={handleChange}>
@@ -137,7 +138,7 @@ export default function Register() {
               />
             </div>
           )}
-        </div>
+        </div> */}
 
         <button type="submit" className="primary-button">הירשם</button>
       </form>

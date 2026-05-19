@@ -133,37 +133,13 @@ function HomePage() {
   }, []);
 
   return (
-    <section className="hero-panel">
-      <div className="hero-copy">
-        <span className="eyebrow">Forumix</span>
-        <h1>Conversations with texture, not just comments.</h1>
-        <p>
-          Explore professional communities, follow active discussions, and move from public threads
-          into focused one-on-one chat when a real connection starts.
-        </p>
-      </div>
-
-      <div className="hero-grid">
-        <div className="hero-card">
-          <strong>Community-first</strong>
-          <p>Topic hubs keep discovery simple and keep discussion organized.</p>
-        </div>
-        <div className="hero-card">
-          <strong>Private follow-up</strong>
-          <p>Turn good replies into direct conversations without losing the thread.</p>
-        </div>
-        <div className="hero-card">
-          <strong>Readable flow</strong>
-          <p>Discussion, comments, and messaging share one calm visual language.</p>
-        </div>
-      </div>
-
-      <div className="search-panel">
-        <div className="search-heading">
-          <span className="eyebrow">Search Everything</span>
-          <h2>Find a word across categories, discussions, and comments</h2>
-          <p>We’ll show every discussion where the term appears and let you jump straight into it.</p>
-        </div>
+    <>
+<div className="search-panel">
+        {/* <div className="search-heading"> */}
+          {/* <span className="eyebrow">Search Everything</span> */}
+          {/* <h2>Find a word across categories, discussions, and comments</h2>
+          <p>We’ll show every discussion where the term appears and let you jump straight into it.</p> */}
+        {/* </div> */}
 
         <form className="search-form" onSubmit={handleSearch}>
           <input
@@ -210,13 +186,40 @@ function HomePage() {
           </div>
         )}
       </div>
+    <section className="hero-panel">
+      <div className="hero-copy">
+        <span className="eyebrow">יחד בדרך</span>
+        <h2>
+          "ברוכות הבאות ליחד בדרך – המקום שבו האתגרים פוגשים את הניסיון של כולנו."
+
+        </h2>
+        <p>
+          את לא צריכה להתמודד לבד עם דרך מאתגרת ומלאה בסימני שאלה, כאן תמצאי אוזן קשבת, ידע מניסיון אישי וקהילה שמבינה אותך באמת.        </p>
+      </div>
+
+      <div className="hero-grid">
+        <div className="hero-card">
+          <strong>קהילה תומכת</strong>
+          <p>שיתוף ושיח בין אמהות המתמודדות עם אתגרים דומים.</p>
+        </div>
+        <div className="hero-card">
+          <strong>ידע וניסיון</strong>
+          <p>מאגר מידע מבוסס על ניסיונן האישי של אמהות אחרות.</p>
+        </div>
+        <div className="hero-card">
+          <strong>מקום של שקט</strong>
+          <p>מרחב בו אפשר לפרוק, להיוועץ ולמצוא נחמה.</p>
+        </div>
+      </div>
+
+
 
       <div className="home-activity-grid">
         <section className="activity-panel">
           <div className="section-header">
             <div>
-              <span className="eyebrow">Latest Discussions</span>
-              <h2>Last 10 discussions</h2>
+              <span className="eyebrow">דיונים חדשים</span>
+              {/* <h3>דיונים חדשים</h3> */}
             </div>
           </div>
 
@@ -246,8 +249,8 @@ function HomePage() {
         <section className="activity-panel">
           <div className="section-header">
             <div>
-              <span className="eyebrow">Latest Comments</span>
-              <h2>Last 10 comments</h2>
+              <span className="eyebrow">תגובות אחרונות</span>
+              {/* <h3>תגובות אחרונות</h3> */}
             </div>
           </div>
 
@@ -260,7 +263,7 @@ function HomePage() {
               {latestComments.map((comment) => (
                 <article key={comment._id} className="activity-card">
                   <strong>{comment.user?.username || "Unknown user"}</strong>
-                  <p>{comment.content}</p>
+                  <p className="preserve-line-breaks">{comment.content}</p>
                   <div className="activity-meta">
                     <span>{comment.discussion?.topic || "Discussion"}</span>
                     <span>{new Date(comment.createdAt).toLocaleDateString()}</span>
@@ -275,6 +278,7 @@ function HomePage() {
         </section>
       </div>
     </section>
+    </>
   );
 }
 
@@ -302,6 +306,7 @@ function App() {
         </Routes>
       </Router>
     </div>
+    
   );
 }
 

@@ -14,7 +14,7 @@ function MyAccount() {
 
   const [formData, setFormData] = useState({
     username: user?.username || "",
-    profession: user?.advancedInfo?.profession || ""
+    city: user?.advancedInfo?.city || ""
   });
 
   useEffect(() => {
@@ -72,10 +72,10 @@ function MyAccount() {
           placeholder="Username"
         />
         <input
-          name="profession"
-          value={formData.profession}
+          name="city"
+          value={formData.city}
           onChange={handleChange}
-          placeholder="profession"
+          placeholder="city"
         />
         <button onClick={handleUpdate}>
           עדכן פרטים

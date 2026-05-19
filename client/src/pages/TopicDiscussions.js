@@ -20,7 +20,7 @@ export default function TopicDiscussions() {
     (state) => state.discussions
   );
   const [showProposalForm, setShowProposalForm] = useState(false);
-  const [proposalForm, setProposalForm] = useState({ title: "", note: "" });
+  const [proposalForm, setProposalForm] = useState({ title: "", topic: "" });
   const [proposalStatus, setProposalStatus] = useState("");
 
   useEffect(() => {
@@ -67,7 +67,7 @@ export default function TopicDiscussions() {
         },
         body: JSON.stringify({
           title: proposalForm.title,
-          note: proposalForm.note,
+          topic: proposalForm.topic,
           category: topicId
         })
       });
@@ -78,7 +78,7 @@ export default function TopicDiscussions() {
         throw new Error(data?.error || "שגיאה בשליחת הצעת דיון");
       }
 
-      setProposalForm({ title: "", note: "" });
+      setProposalForm({ title: "", topic: "" });
       setShowProposalForm(false);
       setProposalStatus("הצעת הדיון נשלחה למנהל לאישור");
     } catch (err) {
@@ -91,7 +91,7 @@ export default function TopicDiscussions() {
       <div className="section-header">
         <div>
           <span className="eyebrow">Topic Discussions</span>
-          <h2>Follow the active threads</h2>
+          <h3>הצעה לדיון חדש</h3>
         </div>
         <button
           type="button"
@@ -118,9 +118,9 @@ export default function TopicDiscussions() {
             required
           />
           <textarea
-            value={proposalForm.note}
-            onChange={(event) => setProposalForm({ ...proposalForm, note: event.target.value })}
-            placeholder="הערה למנהל"
+            value={proposalForm.topic}
+            onChange={(event) => setProposalForm({ ...proposalForm, topic: event.target.value })}
+            placeholder="תוכן"
             required
           />
           <button type="submit" className="primary-button">

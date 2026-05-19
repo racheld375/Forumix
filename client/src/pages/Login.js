@@ -45,8 +45,8 @@ export default function Login() {
     <section className="auth-page">
       <form className="auth-card" onSubmit={handleSubmit}>
         <span className="eyebrow">Welcome back</span>
-        <h2>Sign in to your space</h2>
-        <p>Pick up discussions, messages, and your professional profile right where you left them.</p>
+        {/* <h3>התחבר לחשבון</h3> */}
+        {/* <p>Pick up discussions, messages, and your professional profile right where you left them.</p> */}
 
         <input
           value={username}

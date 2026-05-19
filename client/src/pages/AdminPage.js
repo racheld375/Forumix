@@ -440,7 +440,7 @@ export default function AdminPage() {
               <article key={proposal._id} className="admin-row">
                 <div>
                   <strong>{proposal.title}</strong>
-                  <p>{proposal.note}</p>
+                  <p className="preserve-line-breaks">{proposal.topic || proposal.note}</p>
                   <p>
                     קטגוריה: {proposal.category?.title || "ללא קטגוריה"} | שולח:
                     {" "}{proposal.requester?.username || "משתמש"}
@@ -496,15 +496,42 @@ export default function AdminPage() {
         <div className="admin-table">
           {categories.map((category) => (
             <article key={category._id} className="admin-row">
-              <div>
-                <strong>{category.title}</strong>
-                <p>{category.discussions?.length || 0} דיונים</p>
-              </div>
-              <div className="admin-row-actions">
-                <NavLink className="inline-link" to={`/topic/${category._id}`}>פתיחה</NavLink>
-                <button type="button" className="ghost-button" onClick={() => startEditCategory(category)}>עריכה</button>
-                <button type="button" className="ghost-button danger-button" onClick={() => deleteCategory(category._id)}>מחיקה</button>
-              </div>
+              {editingCategoryId === category._id ? (
+                <form className="admin-inline-edit" onSubmit={saveCategory}>
+                  <input
+                    value={categoryForm.title}
+                    onChange={(event) => setCategoryForm({ title: event.target.value })}
+                    placeholder="שם קטגוריה"
+                    required
+                    autoFocus
+                  />
+                  <div className="admin-row-actions">
+                    <button type="submit" className="primary-button">שמירה</button>
+                    <button
+                      type="button"
+                      className="ghost-button"
+                      onClick={() => {
+                        setEditingCategoryId(null);
+                        setCategoryForm(emptyCategory);
+                      }}
+                    >
+                      ביטול
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  <div className="admin-row-content">
+                    <strong>{category.title}</strong>
+                    <p>{category.discussions?.length || 0} דיונים</p>
+                  </div>
+                  <div className="admin-row-actions">
+                    <NavLink className="inline-link" to={`/topic/${category._id}`}>פתיחה</NavLink>
+                    <button type="button" className="ghost-button" onClick={() => startEditCategory(category)}>עריכה</button>
+                    <button type="button" className="ghost-button danger-button" onClick={() => deleteCategory(category._id)}>מחיקה</button>
+                  </div>
+                </>
+              )}
             </article>
           ))}
         </div>
@@ -570,16 +597,59 @@ export default function AdminPage() {
         <div className="admin-table">
           {discussions.map((discussion) => (
             <article key={discussion._id} className="admin-row">
-              <div>
-                <strong>{discussion.title}</strong>
-                <p>{discussion.topic}</p>
-                <p>{discussion.category?.title || "ללא קטגוריה"} | {discussion.creator?.username || "ללא יוצר"}</p>
-              </div>
-              <div className="admin-row-actions">
-                <NavLink className="inline-link" to={`/discussion/${discussion._id}`}>פתיחה</NavLink>
-                <button type="button" className="ghost-button" onClick={() => startEditDiscussion(discussion)}>עריכה</button>
-                <button type="button" className="ghost-button danger-button" onClick={() => deleteDiscussion(discussion._id)}>מחיקה</button>
-              </div>
+              {editingDiscussionId === discussion._id ? (
+                <form className="admin-inline-edit admin-inline-edit-wide" onSubmit={saveDiscussion}>
+                  <input
+                    value={discussionForm.title}
+                    onChange={(event) => setDiscussionForm({ ...discussionForm, title: event.target.value })}
+                    placeholder="כותרת דיון"
+                    required
+                    autoFocus
+                  />
+                  <textarea
+                    value={discussionForm.topic}
+                    onChange={(event) => setDiscussionForm({ ...discussionForm, topic: event.target.value })}
+                    placeholder="תוכן / נושא הדיון"
+                    required
+                  />
+                  <select
+                    value={discussionForm.category}
+                    onChange={(event) => setDiscussionForm({ ...discussionForm, category: event.target.value })}
+                    required
+                  >
+                    <option value="">בחירת קטגוריה</option>
+                    {categories.map((category) => (
+                      <option key={category._id} value={category._id}>{category.title}</option>
+                    ))}
+                  </select>
+                  <div className="admin-row-actions">
+                    <button type="submit" className="primary-button">שמירה</button>
+                    <button
+                      type="button"
+                      className="ghost-button"
+                      onClick={() => {
+                        setEditingDiscussionId(null);
+                        setDiscussionForm(emptyDiscussion);
+                      }}
+                    >
+                      ביטול
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  <div className="admin-row-content">
+                    <strong>{discussion.title}</strong>
+                    <p>{discussion.topic}</p>
+                    <p>{discussion.category?.title || "ללא קטגוריה"} | {discussion.creator?.username || "ללא יוצר"}</p>
+                  </div>
+                  <div className="admin-row-actions">
+                    <NavLink className="inline-link" to={`/discussion/${discussion._id}`}>פתיחה</NavLink>
+                    <button type="button" className="ghost-button" onClick={() => startEditDiscussion(discussion)}>עריכה</button>
+                    <button type="button" className="ghost-button danger-button" onClick={() => deleteDiscussion(discussion._id)}>מחיקה</button>
+                  </div>
+                </>
+              )}
             </article>
           ))}
         </div>
@@ -631,18 +701,45 @@ export default function AdminPage() {
         <div className="admin-table">
           {comments.map((comment) => (
             <article key={comment._id} className="admin-row">
-              <div>
-                <strong>{comment.user?.username || "משתמש"}</strong>
-                <p>{comment.content}</p>
-                <p>{comment.discussion?.topic || "דיון"}</p>
-              </div>
-              <div className="admin-row-actions">
-                {comment.discussion?._id && (
-                  <NavLink className="inline-link" to={`/discussion/${comment.discussion._id}`}>פתיחה</NavLink>
-                )}
-                <button type="button" className="ghost-button" onClick={() => startEditComment(comment)}>עריכה</button>
-                <button type="button" className="ghost-button danger-button" onClick={() => deleteComment(comment._id)}>מחיקה</button>
-              </div>
+              {editingCommentId === comment._id ? (
+                <form className="admin-inline-edit admin-inline-edit-comment" onSubmit={saveComment}>
+                  <textarea
+                    value={commentForm.content}
+                    onChange={(event) => setCommentForm({ ...commentForm, content: event.target.value })}
+                    placeholder="תוכן תגובה"
+                    required
+                    autoFocus
+                  />
+                  <div className="admin-row-actions">
+                    <button type="submit" className="primary-button">שמירה</button>
+                    <button
+                      type="button"
+                      className="ghost-button"
+                      onClick={() => {
+                        setEditingCommentId(null);
+                        setCommentForm(emptyComment);
+                      }}
+                    >
+                      ביטול
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  <div className="admin-row-content">
+                    <strong>{comment.user?.username || "משתמש"}</strong>
+                    <p className="preserve-line-breaks">{comment.content}</p>
+                    <p>{comment.discussion?.topic || "דיון"}</p>
+                  </div>
+                  <div className="admin-row-actions">
+                    {comment.discussion?._id && (
+                      <NavLink className="inline-link" to={`/discussion/${comment.discussion._id}`}>פתיחה</NavLink>
+                    )}
+                    <button type="button" className="ghost-button" onClick={() => startEditComment(comment)}>עריכה</button>
+                    <button type="button" className="ghost-button danger-button" onClick={() => deleteComment(comment._id)}>מחיקה</button>
+                  </div>
+                </>
+              )}
             </article>
           ))}
         </div>

@@ -38,10 +38,10 @@ export default function Layout() {
         <div className="site-header-top">
           <div className="brand-block">
             <NavLink to="/" className="brand-mark">
-              Forumix
+              "יחד בדרך"
             </NavLink>
             <p className="brand-subtitle">
-              Thoughtful discussion spaces for professionals, creators, and curious people.
+              קהילת אמהות תומכת, לומדת וצומחת.
             </p>
           </div>
 
@@ -54,7 +54,7 @@ export default function Layout() {
             </NavLink>
             {user?.role === "admin" && (
               <NavLink to="/admin" className="header-link">
-                מנהל
+                דשבורד ניהולי
               </NavLink>
             )}
 
@@ -90,6 +90,7 @@ export default function Layout() {
       </header>
 
       <main className="page-shell">
+        
         <Outlet />
       </main>
     </div>

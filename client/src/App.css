@@ -586,7 +586,10 @@ select {
 .section-card select,
 .admin-form-grid input,
 .admin-form-grid select,
-.admin-form-grid textarea {
+.admin-form-grid textarea,
+.admin-inline-edit input,
+.admin-inline-edit select,
+.admin-inline-edit textarea {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid var(--line);
@@ -605,7 +608,10 @@ select {
 .section-card select:focus,
 .admin-form-grid input:focus,
 .admin-form-grid select:focus,
-.admin-form-grid textarea:focus {
+.admin-form-grid textarea:focus,
+.admin-inline-edit input:focus,
+.admin-inline-edit select:focus,
+.admin-inline-edit textarea:focus {
   border-color: var(--accent-2);
   background: var(--surface);
   box-shadow: 0 0 0 3px rgba(31, 95, 139, 0.12);
@@ -661,10 +667,36 @@ select {
   background: rgba(255, 255, 255, 0.9);
 }
 
+.admin-row-content {
+  min-width: 0;
+  flex: 1;
+}
+
 .admin-row p {
   margin: 8px 0 0;
   color: var(--muted);
   line-height: 1.55;
+}
+
+.admin-inline-edit {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  width: 100%;
+}
+
+.admin-inline-edit-wide {
+  grid-template-columns: minmax(180px, 1fr) minmax(220px, 1.4fr) minmax(160px, 0.8fr) auto;
+}
+
+.admin-inline-edit-comment {
+  grid-template-columns: minmax(220px, 1fr) auto;
+}
+
+.admin-inline-edit textarea {
+  min-height: 96px;
+  resize: vertical;
 }
 
 .admin-row-actions {
@@ -688,6 +720,13 @@ select {
 .comment-body {
   margin: 0 0 12px;
   color: var(--ink) !important;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.preserve-line-breaks {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .comment-meta {
@@ -895,9 +934,14 @@ select {
   text-align: center;
 }
 
-.form-grid {
+/* .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+} */
+ .form-grid {
+  display: flex;
+  flex-direction: column;
   gap: 12px;
 }
 
@@ -1049,6 +1093,12 @@ select {
   }
 
   .admin-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-inline-edit,
+  .admin-inline-edit-wide,
+  .admin-inline-edit-comment {
     grid-template-columns: 1fr;
   }
 
