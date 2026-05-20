@@ -22,6 +22,12 @@ const userSchema = new mongoose.Schema({
     city: { type: String, required: true },
     createdAt: { type: Date, default: Date.now },
     advancedInfo: { type: advancedInfoSchema, default: {} },
+    termsAgreement: {
+      originalName: { type: String },
+      fileName: { type: String },
+      path: { type: String },
+      uploadedAt: { type: Date }
+    },
     role: {
         type: String,
         enum: ["admin", "user", "professional"],

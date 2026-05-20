@@ -1091,6 +1091,32 @@ select {
   color: var(--muted);
 }
 
+.terms-upload-box {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 240, 229, 0.52);
+}
+
+.terms-upload-box .ghost-button {
+  text-align: center;
+  text-decoration: none;
+  background: var(--surface);
+}
+
+.terms-file-label {
+  display: grid;
+  gap: 8px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.terms-upload-box p {
+  overflow-wrap: anywhere;
+}
+
 .auth-switch {
   text-align: center;
 }

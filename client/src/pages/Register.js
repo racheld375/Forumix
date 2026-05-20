@@ -1,16 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const PROFESSIONS = [
-  "הייטק","עצמאיות","עיצוב גרפי","צילום מקצועי",
-  "אדריכלות ועיצוב פנים","אומנות הבמה והפקות תוכן",
-  "טיפול יעוץ  והנחיה","כתיבה ספרותית","חשבונאות ומיסים",
-  "תזונה בריאות והתעמלות","הוראה למידה ועזרים",
-  "אולפן סאונד ונגינה","קופירייטינג"
-];
-
 export default function Register() {
   const navigate = useNavigate();
+  const TERMS_URL = "http://localhost:7500/Forumix/auth/terms";
 
   const [form, setForm] = useState({
     username: "",
@@ -21,6 +14,7 @@ export default function Register() {
     educationPlace: "",
     startYear: ""
   });
+  const [termsFile, setTermsFile] = useState(null);
 
   const handleChange = (e) => {
     setForm({
@@ -29,24 +23,58 @@ export default function Register() {
     });
   };
 
+  const handleTermsFileChange = (e) => {
+    const file = e.target.files?.[0] || null;
+
+    if (file && file.type !== "application/pdf") {
+      alert("אפשר להעלות רק קובץ PDF חתום");
+      e.target.value = "";
+      setTermsFile(null);
+      return;
+    }
+
+    setTermsFile(file);
+  };
+
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(",")[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const body = {
-      username: form.username,
-      password: form.password,
-      age: Number(form.age),
-      city: form.city,
-      advancedInfo: form.profession
-        ? {
-            profession: form.profession,
-            educationPlace: form.educationPlace,
-            startYear: Number(form.startYear)
-          }
-        : undefined
-    };
+    if (!termsFile) {
+      alert("חובה להוריד את התקנון, לחתום עליו ולהעלות אותו כ-PDF");
+      return;
+    }
 
     try {
+      const termsFileData = await fileToBase64(termsFile);
+
+      const body = {
+        username: form.username,
+        password: form.password,
+        age: Number(form.age),
+        city: form.city,
+        advancedInfo: form.profession
+          ? {
+              profession: form.profession,
+              educationPlace: form.educationPlace,
+              startYear: Number(form.startYear)
+            }
+          : undefined,
+        termsFile: {
+          name: termsFile.name,
+          type: termsFile.type,
+          size: termsFile.size,
+          data: termsFileData
+        }
+      };
+
       const res = await fetch("http://localhost:7500/Forumix/auth/register", {
         method: "POST",
         headers: {
@@ -106,6 +134,25 @@ export default function Register() {
             value={form.city}
             onChange={handleChange}
           />
+        </div>
+
+        <div className="terms-upload-box">
+          <a className="ghost-button" href={TERMS_URL} download>
+            הורדת התקנון לחתימה
+          </a>
+
+          <label className="terms-file-label">
+            העלאת התקנון החתום
+            <input
+              name="termsFile"
+              type="file"
+              accept="application/pdf,.pdf"
+              required
+              onChange={handleTermsFileChange}
+            />
+          </label>
+
+          {termsFile && <p>{termsFile.name}</p>}
         </div>
 
         {/* <div className="section-card">
