@@ -185,6 +185,74 @@ exports.getAllComments = async (req, res) => {
   }
 };
 
+exports.getCommentsByCategoryStats = async (req, res) => {
+  try {
+    const { period = "all" } = req.query;
+    const match = {};
+
+    if (period !== "all") {
+      const days = Number.parseInt(period, 10);
+
+      if (Number.isNaN(days) || days <= 0) {
+        return res.status(400).json({ error: "תקופה לא תקינה" });
+      }
+
+      const fromDate = new Date();
+      fromDate.setDate(fromDate.getDate() - days);
+      match.createdAt = { $gte: fromDate };
+    }
+
+    const categories = await Category.find().select("title").sort({ title: 1 });
+    const countsByCategory = new Map(
+      categories.map((category) => [
+        category._id.toString(),
+        {
+          categoryId: category._id,
+          categoryTitle: category.title,
+          commentsCount: 0
+        }
+      ])
+    );
+
+    const comments = await Comment.find(match)
+      .select("discussion")
+      .populate({
+        path: "discussion",
+        select: "category",
+        populate: { path: "category", select: "title" }
+      });
+
+    comments.forEach((comment) => {
+      const category = comment.discussion?.category;
+      const categoryId = category?._id?.toString();
+
+      if (!categoryId) return;
+
+      if (!countsByCategory.has(categoryId)) {
+        countsByCategory.set(categoryId, {
+          categoryId: category._id,
+          categoryTitle: category.title || "ללא קטגוריה",
+          commentsCount: 0
+        });
+      }
+
+      countsByCategory.get(categoryId).commentsCount += 1;
+    });
+
+    const stats = [...countsByCategory.values()]
+      .sort((a, b) => b.commentsCount - a.commentsCount || a.categoryTitle.localeCompare(b.categoryTitle));
+
+    res.json({
+      period,
+      totalComments: comments.length,
+      stats
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "שגיאה בשליפת נתוני גרפים" });
+  }
+};
+
 // ========================
 // שליפת תגובות לפי דיון (Discussion ID)
 // ========================

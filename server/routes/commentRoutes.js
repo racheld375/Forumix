@@ -22,6 +22,9 @@ router.delete("/:id", authMiddleware, requireAdmin, commentController.deleteComm
 // שליפת כל התגובות
 router.get("/", commentController.getAllComments);
 
+// נתוני גרפים למנהל: כמות תגובות לפי קטגוריה ותקופה
+router.get("/stats/by-category", authMiddleware, requireAdmin, commentController.getCommentsByCategoryStats);
+
 // שליפת תגובות לפי דיון
 router.get("/by-discussion/:discussionId", commentController.getCommentsByDiscussion);
 

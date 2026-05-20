@@ -11,6 +11,15 @@ const API_BASE = "http://localhost:7500/Forumix";
 const emptyCategory = { title: "" };
 const emptyDiscussion = { title: "", topic: "", category: "", creator: "" };
 const emptyComment = { content: "", discussion: "" };
+const emptyAdmin = { username: "", password: "", age: "", city: "" };
+
+const graphPeriods = [
+  { value: "7", label: "7 ימים אחרונים" },
+  { value: "30", label: "30 ימים אחרונים" },
+  { value: "90", label: "90 ימים אחרונים" },
+  { value: "365", label: "שנה אחרונה" },
+  { value: "all", label: "כל התקופה" }
+];
 
 function getMessage(data, fallback) {
   return data?.error || data?.message || fallback;
@@ -31,6 +40,11 @@ export default function AdminPage() {
   const [comments, setComments] = useState([]);
   const [users, setUsers] = useState([]);
   const [proposals, setProposals] = useState([]);
+  const [activeAdminTool, setActiveAdminTool] = useState("");
+  const [adminForm, setAdminForm] = useState(emptyAdmin);
+  const [graphPeriod, setGraphPeriod] = useState("all");
+  const [graphData, setGraphData] = useState([]);
+  const [graphLoading, setGraphLoading] = useState(false);
 
   const [categoryForm, setCategoryForm] = useState(emptyCategory);
   const [editingCategoryId, setEditingCategoryId] = useState(null);
@@ -131,6 +145,12 @@ export default function AdminPage() {
       socket.off("discussionProposalCreated", handleProposalCreated);
     };
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (isAdmin && activeAdminTool === "graphs") {
+      loadGraphData(graphPeriod);
+    }
+  }, [isAdmin, activeAdminTool, graphPeriod]);
 
   const handleAdminLogin = async (event) => {
     event.preventDefault();
@@ -332,6 +352,55 @@ export default function AdminPage() {
     await loadAdminData();
   };
 
+  const createAdmin = async (event) => {
+    event.preventDefault();
+
+    const response = await fetch(`${API_BASE}/auth/register-admin`, {
+      method: "POST",
+      headers: adminHeaders,
+      body: JSON.stringify({
+        username: adminForm.username,
+        password: adminForm.password,
+        age: Number(adminForm.age),
+        city: adminForm.city
+      })
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      setStatus(getMessage(data, "שגיאה ביצירת מנהל"));
+      return;
+    }
+
+    setAdminForm(emptyAdmin);
+    setStatus("המנהל נוסף בהצלחה");
+    await loadAdminData();
+  };
+
+  const loadGraphData = async (period = graphPeriod) => {
+    setGraphLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/comment/stats/by-category?period=${period}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setStatus(getMessage(data, "שגיאה בטעינת נתוני גרפים"));
+        setGraphData([]);
+        return;
+      }
+
+      setGraphData(Array.isArray(data?.stats) ? data.stats : []);
+    } catch (err) {
+      setStatus(err.message || "שגיאה בטעינת נתוני גרפים");
+      setGraphData([]);
+    } finally {
+      setGraphLoading(false);
+    }
+  };
+
   const startEditCategory = (category) => {
     setEditingCategoryId(category._id);
     setCategoryForm({ title: category.title || "" });
@@ -354,6 +423,8 @@ export default function AdminPage() {
       discussion: comment.discussion?._id || comment.discussion || ""
     });
   };
+
+  const maxGraphCount = Math.max(...graphData.map((item) => item.commentsCount), 1);
 
   if (!isAdmin) {
     return (
@@ -397,9 +468,25 @@ export default function AdminPage() {
             כאן אפשר לראות את הקטגוריות, הדיונים והתגובות כמו משתמש רגיל, ובנוסף ליצור, לערוך ולמחוק אותם.
           </p>
         </div>
-        <button type="button" className="ghost-button" onClick={loadAdminData}>
-          רענון
-        </button>
+        <div className="admin-dashboard-actions">
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() => setActiveAdminTool((current) => current === "add-admin" ? "" : "add-admin")}
+          >
+            הוספת מנהל
+          </button>
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() => setActiveAdminTool((current) => current === "graphs" ? "" : "graphs")}
+          >
+            גרפים
+          </button>
+          <button type="button" className="ghost-button" onClick={loadAdminData}>
+            רענון
+          </button>
+        </div>
       </div>
 
       {loading && <p className="status-text">טוען נתוני ניהול...</p>}
@@ -423,6 +510,90 @@ export default function AdminPage() {
           <p>{proposals.length}</p>
         </div>
       </div>
+
+      {activeAdminTool === "add-admin" && (
+        <section className="summary-panel">
+          <div className="summary-toolbar">
+            <div>
+              <span className="eyebrow">Admin Registration</span>
+              <h3>הרשמת מנהל חדש</h3>
+            </div>
+          </div>
+
+          <form className="admin-form-grid admin-form-grid-wide" onSubmit={createAdmin}>
+            <input
+              value={adminForm.username}
+              onChange={(event) => setAdminForm({ ...adminForm, username: event.target.value })}
+              placeholder="שם משתמש"
+              required
+            />
+            <input
+              value={adminForm.password}
+              onChange={(event) => setAdminForm({ ...adminForm, password: event.target.value })}
+              type="password"
+              placeholder="סיסמה"
+              required
+            />
+            <input
+              value={adminForm.age}
+              onChange={(event) => setAdminForm({ ...adminForm, age: event.target.value })}
+              type="number"
+              min="0"
+              placeholder="גיל"
+              required
+            />
+            <input
+              value={adminForm.city}
+              onChange={(event) => setAdminForm({ ...adminForm, city: event.target.value })}
+              placeholder="עיר"
+              required
+            />
+            <button type="submit" className="primary-button">יצירת מנהל</button>
+          </form>
+        </section>
+      )}
+
+      {activeAdminTool === "graphs" && (
+        <section className="summary-panel">
+          <div className="summary-toolbar summary-actions-wide">
+            <div>
+              <span className="eyebrow">Analytics</span>
+              <h3>תגובות לפי קטגוריה</h3>
+            </div>
+            <label className="summary-lines-field">
+              <span>תקופה</span>
+              <select value={graphPeriod} onChange={(event) => setGraphPeriod(event.target.value)}>
+                {graphPeriods.map((period) => (
+                  <option key={period.value} value={period.value}>{period.label}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          {graphLoading ? (
+            <p className="status-text">טוען נתוני גרף...</p>
+          ) : graphData.length === 0 ? (
+            <p className="status-text">אין קטגוריות להצגה.</p>
+          ) : (
+            <div className="admin-chart">
+              {graphData.map((item) => (
+                <div key={item.categoryId} className="admin-chart-row">
+                  <div className="admin-chart-label">
+                    <strong>{item.categoryTitle}</strong>
+                    <span>{item.commentsCount} תגובות</span>
+                  </div>
+                  <div className="admin-chart-track">
+                    <div
+                      className="admin-chart-bar"
+                      style={{ width: item.commentsCount > 0 ? `${Math.max((item.commentsCount / maxGraphCount) * 100, 4)}%` : "0%" }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       <section className="summary-panel">
         <div className="summary-toolbar">

@@ -3,6 +3,7 @@ const router = express.Router();
 const User = require("../models/Users");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { authMiddleware, requireAdmin } = require("../conpig/authMiddleware");
 
 router.post("/register", async (req, res) => {
     try {
@@ -74,6 +75,35 @@ router.post("/register", async (req, res) => {
       );
 
       res.json({ token });
+    } catch (err) {
+      res.status(500).json({ message: "שגיאת שרת" });
+    }
+  });
+
+router.post("/register-admin", authMiddleware, requireAdmin, async (req, res) => {
+    try {
+      const { username, password, age, city } = req.body;
+
+      if (!username || !password || age == null || !city) {
+        return res.status(400).json({ message: "חובה למלא שם משתמש, סיסמה, גיל ועיר" });
+      }
+
+      const existingUser = await User.findOne({ username });
+      if (existingUser) {
+        return res.status(400).json({ message: "משתמש כבר קיים" });
+      }
+
+      const user = new User({
+        username,
+        passwordHash: password,
+        age,
+        city,
+        role: "admin"
+      });
+
+      await user.save();
+
+      res.status(201).json({ message: "מנהל נוצר בהצלחה" });
     } catch (err) {
       res.status(500).json({ message: "שגיאת שרת" });
     }
